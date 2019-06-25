@@ -140,7 +140,7 @@ static int const RCTVideoUnset = -1;
 - (RCTVideoPlayerViewController*)createPlayerViewController:(AVPlayer*)player
                                              withPlayerItem:(AVPlayerItem*)playerItem {
     RCTVideoPlayerViewController* viewController = [[RCTVideoPlayerViewController alloc] init];
-    viewController.showsPlaybackControls = YES;
+    viewController.showsPlaybackControls = _controls;
     viewController.rctDelegate = self;
     viewController.preferredOrientation = _fullscreenOrientation;
     
@@ -1244,7 +1244,7 @@ static int const RCTVideoUnset = -1;
         self.onVideoFullscreenPlayerWillPresent(@{@"target": self.reactTag});
       }
       [viewController presentViewController:_playerViewController animated:true completion:^{
-        _playerViewController.showsPlaybackControls = YES;
+        _playerViewController.showsPlaybackControls = _controls;
         _fullscreenPlayerPresented = fullscreen;
         _playerViewController.autorotate = _fullscreenAutorotate;
         if(self.onVideoFullscreenPlayerDidPresent) {
