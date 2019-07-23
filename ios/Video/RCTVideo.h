@@ -26,6 +26,7 @@
 @property (nonatomic, copy) RCTDirectEventBlock onVideoBuffer;
 @property (nonatomic, copy) RCTDirectEventBlock onVideoError;
 @property (nonatomic, copy) RCTDirectEventBlock onVideoProgress;
+@property (nonatomic, copy) RCTDirectEventBlock onRemotePlayPause;
 @property (nonatomic, copy) RCTDirectEventBlock onBandwidthUpdate;
 @property (nonatomic, copy) RCTDirectEventBlock onVideoSeek;
 @property (nonatomic, copy) RCTDirectEventBlock onVideoEnd;
