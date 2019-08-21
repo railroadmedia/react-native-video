@@ -1,6 +1,6 @@
 package com.brentvatne.exoplayer;
 
-import android.support.annotation.StringDef;
+import androidx.annotation.StringDef;
 import android.view.View;
 
 import com.facebook.react.bridge.Arguments;
@@ -44,6 +44,7 @@ class VideoEventEmitter {
     private static final String EVENT_IDLE = "onVideoIdle";
     private static final String EVENT_TIMED_METADATA = "onTimedMetadata";
     private static final String EVENT_AUDIO_BECOMING_NOISY = "onVideoAudioBecomingNoisy";
+    private static final String EVENT_REMOTE_PLAY_PAUSE = "onRemotePlayPause";
     private static final String EVENT_AUDIO_FOCUS_CHANGE = "onAudioFocusChanged";
     private static final String EVENT_PLAYBACK_RATE_CHANGE = "onPlaybackRateChange";
 
@@ -65,6 +66,7 @@ class VideoEventEmitter {
             EVENT_IDLE,
             EVENT_TIMED_METADATA,
             EVENT_AUDIO_BECOMING_NOISY,
+            EVENT_REMOTE_PLAY_PAUSE,
             EVENT_AUDIO_FOCUS_CHANGE,
             EVENT_PLAYBACK_RATE_CHANGE,
             EVENT_BANDWIDTH,
@@ -89,6 +91,7 @@ class VideoEventEmitter {
             EVENT_IDLE,
             EVENT_TIMED_METADATA,
             EVENT_AUDIO_BECOMING_NOISY,
+            EVENT_REMOTE_PLAY_PAUSE,
             EVENT_AUDIO_FOCUS_CHANGE,
             EVENT_PLAYBACK_RATE_CHANGE,
             EVENT_BANDWIDTH,
@@ -125,7 +128,7 @@ class VideoEventEmitter {
 
     private static final String EVENT_PROP_TIMED_METADATA = "metadata";
 
-    private static final String EVENT_PROP_BITRATE = "bitrate";   
+    private static final String EVENT_PROP_BITRATE = "bitrate";
 
 
     void setViewId(int viewId) {
@@ -180,7 +183,7 @@ class VideoEventEmitter {
         WritableMap event = Arguments.createMap();
         event.putDouble(EVENT_PROP_BITRATE, bitRateEstimate);
         receiveEvent(EVENT_BANDWIDTH, event);
-    }    
+    }
 
     void seek(long currentPosition, long seekTime) {
         WritableMap event = Arguments.createMap();
@@ -276,6 +279,10 @@ class VideoEventEmitter {
 
     void audioBecomingNoisy() {
         receiveEvent(EVENT_AUDIO_BECOMING_NOISY, null);
+    }
+
+    void onRemotePlayPause() {
+        receiveEvent(EVENT_REMOTE_PLAY_PAUSE, null);
     }
 
     private void receiveEvent(@VideoEvents String type, WritableMap event) {
