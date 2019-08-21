@@ -18,6 +18,10 @@ import android.view.Window;
 import android.webkit.CookieManager;
 import android.widget.MediaController;
 
+import android.media.session.MediaSession;
+import android.view.KeyEvent;
+import android.content.Intent;
+
 import com.android.vending.expansion.zipfile.APKExpansionSupport;
 import com.android.vending.expansion.zipfile.ZipResourceFile;
 import com.facebook.react.bridge.Arguments;
@@ -55,6 +59,7 @@ public class ReactVideoView extends ScalableVideoView implements
 
     public enum Events {
         EVENT_LOAD_START("onVideoLoadStart"),
+        EVENT_REMOTE_PLAY_PAUSE("onRemotePlayPause"),
         EVENT_LOAD("onVideoLoad"),
         EVENT_ERROR("onVideoError"),
         EVENT_PROGRESS("onVideoProgress"),
@@ -80,6 +85,7 @@ public class ReactVideoView extends ScalableVideoView implements
             return mName;
         }
     }
+    private static MediaSession s_mediaSession;
 
     public static final String EVENT_PROP_FAST_FORWARD = "canPlayFastForward";
     public static final String EVENT_PROP_SLOW_FORWARD = "canPlaySlowForward";
@@ -169,6 +175,27 @@ public class ReactVideoView extends ScalableVideoView implements
                 }
             }
         };
+        attachRemoteControls();
+    }
+
+    /**
+     * Adding support for remote/headphones controls
+     */
+    private void attachRemoteControls() {
+        s_mediaSession = new MediaSession(getContext(), "MyMediaSession");
+        s_mediaSession.setCallback(new MediaSession.Callback() {
+            @Override
+            public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
+                KeyEvent ke = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                if (ke != null && ke.getAction() == KeyEvent.ACTION_DOWN) {
+                    int keyCode = ke.getKeyCode();
+                    mEventEmitter.receiveEvent(getId(), Events.EVENT_REMOTE_PLAY_PAUSE.toString(), null);
+                }
+                return super.onMediaButtonEvent(mediaButtonIntent);
+            }
+        });
+        s_mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+        s_mediaSession.setActive(true);
     }
 
     @Override
@@ -402,7 +429,7 @@ public class ReactVideoView extends ScalableVideoView implements
             if (!mMediaPlayer.isPlaying()) {
                 start();
                 // Setting the rate unpauses, so we have to wait for an unpause
-                if (mRate != mActiveRate) { 
+                if (mRate != mActiveRate) {
                     setRateModifier(mRate);
                 }
 
@@ -665,7 +692,7 @@ public class ReactVideoView extends ScalableVideoView implements
             setKeepScreenOn(false);
         }
     }
-        
+
     // This is not fully tested and does not work for all forms of timed metadata
     @TargetApi(23) // 6.0
     public class TimedMetaDataAvailableListener
@@ -765,7 +792,7 @@ public class ReactVideoView extends ScalableVideoView implements
 
         return result;
     }
-        
+
     // Select track (so we can use it to listen to timed meta data updates)
     private void selectTimedMetadataTrack(MediaPlayer mp) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
