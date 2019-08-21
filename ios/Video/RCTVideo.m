@@ -126,14 +126,10 @@ static int const RCTVideoUnset = -1;
     }];
 
     [commandCenter.playCommand addTargetWithHandler: ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        NSString *temp = @"---> PL2 <---";
-        printf("%s\n", [temp UTF8String]);
         return MPRemoteCommandHandlerStatusSuccess;
     }];
 
     [commandCenter.pauseCommand addTargetWithHandler: ^MPRemoteCommandHandlerStatus(MPRemoteCommandEvent * _Nonnull event) {
-        NSString *temp = @"---> PL3 <---";
-        printf("%s\n", [temp UTF8String]);
         return MPRemoteCommandHandlerStatusSuccess;
     }];
     
@@ -737,7 +733,25 @@ static int const RCTVideoUnset = -1;
                                           @"target": self.reactTag});
         }
     }
-  } else {
+  } else if (object == _playerViewController.contentOverlayView) {
+      // when controls==true, this is a hack to reset the rootview when rotation happens in fullscreen
+      if ([keyPath isEqualToString:@"frame"]) {
+
+        CGRect oldRect = [change[NSKeyValueChangeOldKey] CGRectValue];
+        CGRect newRect = [change[NSKeyValueChangeNewKey] CGRectValue];
+
+        if (!CGRectEqualToRect(oldRect, newRect)) {
+          if (CGRectEqualToRect(newRect, [UIScreen mainScreen].bounds)) {
+            NSLog(@"in fullscreen");
+          } else NSLog(@"not fullscreen");
+
+          [self.reactViewController.view setFrame:[UIScreen mainScreen].bounds];
+          [self.reactViewController.view setNeedsLayout];
+        }
+
+        return;
+      }
+  } else if ([super respondsToSelector:@selector(observeValueForKeyPath:ofObject:change:context:)]) {
     [super observeValueForKeyPath:keyPath ofObject:object change:change context:context];
   }
 }
@@ -982,7 +996,9 @@ static int const RCTVideoUnset = -1;
 - (void)applyModifiers
 {
   if (_muted) {
-    [_player setVolume:0];
+    if (!_controls) {
+      [_player setVolume:0];
+    }
     [_player setMuted:YES];
   } else {
     [_player setVolume:_volume];
@@ -1515,6 +1531,8 @@ static int const RCTVideoUnset = -1;
   [_playerViewController.contentOverlayView removeObserver:self forKeyPath:@"frame"];
   [_playerViewController removeObserver:self forKeyPath:readyForDisplayKeyPath];
   [_playerViewController.view removeFromSuperview];
+  _playerViewController.rctDelegate = nil;
+  _playerViewController.player = nil;
   _playerViewController = nil;
 
   [self removePlayerTimeObserver];
