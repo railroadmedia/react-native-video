@@ -55,11 +55,13 @@ public class ReactVideoView extends ScalableVideoView implements
     MediaPlayer.OnCompletionListener,
     MediaPlayer.OnInfoListener,
     LifecycleEventListener,
+    BecomingNoisyListener,
     MediaController.MediaPlayerControl {
 
     public enum Events {
         EVENT_LOAD_START("onVideoLoadStart"),
         EVENT_REMOTE_PLAY_PAUSE("onRemotePlayPause"),
+        EVENT_AUDIO_BECOMING_NOISY("onAudioBecomingNoisy"),
         EVENT_LOAD("onVideoLoad"),
         EVENT_ERROR("onVideoError"),
         EVENT_PROGRESS("onVideoProgress"),
@@ -86,6 +88,7 @@ public class ReactVideoView extends ScalableVideoView implements
         }
     }
     private static MediaSession s_mediaSession;
+    private final AudioBecomingNoisyReceiver audioBecomingNoisyReceiver;
 
     public static final String EVENT_PROP_FAST_FORWARD = "canPlayFastForward";
     public static final String EVENT_PROP_SLOW_FORWARD = "canPlaySlowForward";
@@ -176,6 +179,9 @@ public class ReactVideoView extends ScalableVideoView implements
             }
         };
         attachRemoteControls();
+        audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
+        audioBecomingNoisyReceiver.setListener(this);
+
     }
 
     /**
@@ -206,6 +212,11 @@ public class ReactVideoView extends ScalableVideoView implements
         }
 
         return super.onTouchEvent(event);
+    }
+
+    @Override
+    public void onAudioBecomingNoisy() {
+        mEventEmitter.receiveEvent(getId(), Events.EVENT_AUDIO_BECOMING_NOISY.toString(), null);
     }
 
     @Override
