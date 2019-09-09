@@ -46,6 +46,11 @@ import java.math.BigDecimal;
 
 import javax.annotation.Nullable;
 
+import java.util.Collections;
+import java.util.List;
+import android.graphics.Rect;
+import androidx.core.view.ViewCompat;
+
 @SuppressLint("ViewConstructor")
 public class ReactVideoView extends ScalableVideoView implements
     MediaPlayer.OnPreparedListener,
@@ -188,20 +193,22 @@ public class ReactVideoView extends ScalableVideoView implements
      * Adding support for remote/headphones controls
      */
     private void attachRemoteControls() {
-        s_mediaSession = new MediaSession(getContext(), "MyMediaSession");
-        s_mediaSession.setCallback(new MediaSession.Callback() {
-            @Override
-            public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
-                KeyEvent ke = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
-                if (ke != null && ke.getAction() == KeyEvent.ACTION_DOWN) {
-                    int keyCode = ke.getKeyCode();
-                    mEventEmitter.receiveEvent(getId(), Events.EVENT_REMOTE_PLAY_PAUSE.toString(), null);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            s_mediaSession = new MediaSession(getContext(), "MyMediaSession");
+            s_mediaSession.setCallback(new MediaSession.Callback() {
+                @Override
+                public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
+                    KeyEvent ke = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                    if (ke != null && ke.getAction() == KeyEvent.ACTION_DOWN) {
+                        int keyCode = ke.getKeyCode();
+                        mEventEmitter.receiveEvent(getId(), Events.EVENT_REMOTE_PLAY_PAUSE.toString(), null);
+                    }
+                    return super.onMediaButtonEvent(mediaButtonIntent);
                 }
-                return super.onMediaButtonEvent(mediaButtonIntent);
-            }
-        });
-        s_mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
-        s_mediaSession.setActive(true);
+            });
+            s_mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            s_mediaSession.setActive(true);
+        }
     }
 
     @Override
@@ -223,7 +230,10 @@ public class ReactVideoView extends ScalableVideoView implements
     @SuppressLint("DrawAllocation")
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-
+        List<Rect> exclusions = Collections.singletonList(
+                new Rect(left, top, right, bottom)
+        );
+        ViewCompat.setSystemGestureExclusionRects(this, exclusions);
         if (!changed || !mMediaPlayerValid) {
             return;
         }
