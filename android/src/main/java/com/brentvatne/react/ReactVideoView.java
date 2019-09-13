@@ -231,7 +231,7 @@ public class ReactVideoView extends ScalableVideoView implements
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
         List<Rect> exclusions = Collections.singletonList(
-                new Rect(left, top, right, bottom)
+                new Rect(left, top, right, bottom + 100)
         );
         ViewCompat.setSystemGestureExclusionRects(this, exclusions);
         if (!changed || !mMediaPlayerValid) {
