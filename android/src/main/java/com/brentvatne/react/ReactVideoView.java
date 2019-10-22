@@ -553,7 +553,7 @@ public class ReactVideoView extends ScalableVideoView implements
             decorView.setSystemUiVisibility(uiOptions);
             mEventEmitter.receiveEvent(getId(), Events.EVENT_FULLSCREEN_DID_PRESENT.toString(), null);
         } else {
-            uiOptions = View.SYSTEM_UI_FLAG_VISIBLE;
+            uiOptions = View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
             mEventEmitter.receiveEvent(getId(), Events.EVENT_FULLSCREEN_WILL_DISMISS.toString(), null);
             decorView.setSystemUiVisibility(uiOptions);
             mEventEmitter.receiveEvent(getId(), Events.EVENT_FULLSCREEN_DID_DISMISS.toString(), null);
