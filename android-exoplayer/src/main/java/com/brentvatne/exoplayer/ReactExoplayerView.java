@@ -3,6 +3,7 @@ package com.brentvatne.exoplayer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.graphics.Rect;
 import android.media.AudioManager;
 import android.media.session.MediaSession;
 import android.view.KeyEvent;
@@ -16,6 +17,8 @@ import android.view.View;
 import android.view.Window;
 import android.view.accessibility.CaptioningManager;
 import android.widget.FrameLayout;
+
+import androidx.core.view.ViewCompat;
 
 import com.brentvatne.react.R;
 import com.brentvatne.receiver.AudioBecomingNoisyReceiver;
@@ -70,6 +73,8 @@ import java.net.CookieHandler;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -355,6 +360,10 @@ class ReactExoplayerView extends FrameLayout implements
         view.measure(MeasureSpec.makeMeasureSpec(getMeasuredWidth(), MeasureSpec.EXACTLY),
                 MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
         view.layout(view.getLeft(), view.getTop(), view.getMeasuredWidth(), view.getMeasuredHeight());
+        List<Rect> exclusions = Collections.singletonList(
+                new Rect(getLeft(), getTop(), getRight(), getBottom())
+        );
+        ViewCompat.setSystemGestureExclusionRects(this, exclusions);
     }
 
     private void initializePlayer() {
@@ -705,6 +714,7 @@ class ReactExoplayerView extends FrameLayout implements
             Format videoFormat = player.getVideoFormat();
             int width = videoFormat != null ? videoFormat.width : 0;
             int height = videoFormat != null ? videoFormat.height : 0;
+            player.setPlayWhenReady(true);
             eventEmitter.load(player.getDuration(), player.getCurrentPosition(), width, height,
                     getAudioTrackInfo(), getTextTrackInfo(), getVideoTrackInfo());
         }
