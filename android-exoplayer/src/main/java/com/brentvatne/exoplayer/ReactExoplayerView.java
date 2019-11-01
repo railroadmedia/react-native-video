@@ -361,7 +361,7 @@ class ReactExoplayerView extends FrameLayout implements
                 MeasureSpec.makeMeasureSpec(getMeasuredHeight(), MeasureSpec.EXACTLY));
         view.layout(view.getLeft(), view.getTop(), view.getMeasuredWidth(), view.getMeasuredHeight());
         List<Rect> exclusions = Collections.singletonList(
-                new Rect(getLeft(), getTop(), getRight(), getBottom())
+                new Rect(getLeft(), getTop(), getRight(), getBottom()+100)
         );
         ViewCompat.setSystemGestureExclusionRects(this, exclusions);
     }
