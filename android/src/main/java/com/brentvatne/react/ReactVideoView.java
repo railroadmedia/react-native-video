@@ -18,6 +18,10 @@ import android.view.Window;
 import android.webkit.CookieManager;
 import android.widget.MediaController;
 
+import android.media.session.MediaSession;
+import android.view.KeyEvent;
+import android.content.Intent;
+
 import com.android.vending.expansion.zipfile.APKExpansionSupport;
 import com.android.vending.expansion.zipfile.ZipResourceFile;
 import com.facebook.react.bridge.Arguments;
@@ -42,6 +46,11 @@ import java.math.BigDecimal;
 
 import javax.annotation.Nullable;
 
+import java.util.Collections;
+import java.util.List;
+import android.graphics.Rect;
+import androidx.core.view.ViewCompat;
+
 @SuppressLint("ViewConstructor")
 public class ReactVideoView extends ScalableVideoView implements
     MediaPlayer.OnPreparedListener,
@@ -51,10 +60,13 @@ public class ReactVideoView extends ScalableVideoView implements
     MediaPlayer.OnCompletionListener,
     MediaPlayer.OnInfoListener,
     LifecycleEventListener,
+    BecomingNoisyListener,
     MediaController.MediaPlayerControl {
 
     public enum Events {
         EVENT_LOAD_START("onVideoLoadStart"),
+        EVENT_REMOTE_PLAY_PAUSE("onRemotePlayPause"),
+        EVENT_AUDIO_BECOMING_NOISY("onAudioBecomingNoisy"),
         EVENT_LOAD("onVideoLoad"),
         EVENT_ERROR("onVideoError"),
         EVENT_PROGRESS("onVideoProgress"),
@@ -80,6 +92,8 @@ public class ReactVideoView extends ScalableVideoView implements
             return mName;
         }
     }
+    private static MediaSession s_mediaSession;
+    private final AudioBecomingNoisyReceiver audioBecomingNoisyReceiver;
 
     public static final String EVENT_PROP_FAST_FORWARD = "canPlayFastForward";
     public static final String EVENT_PROP_SLOW_FORWARD = "canPlaySlowForward";
@@ -123,6 +137,7 @@ public class ReactVideoView extends ScalableVideoView implements
     private boolean mRepeat = false;
     private boolean mPaused = false;
     private boolean mMuted = false;
+    private boolean mPreventsDisplaySleepDuringVideoPlayback = true;
     private float mVolume = 1.0f;
     private float mStereoPan = 0.0f;
     private float mProgressUpdateInterval = 250.0f;
@@ -169,6 +184,32 @@ public class ReactVideoView extends ScalableVideoView implements
                 }
             }
         };
+        attachRemoteControls();
+        audioBecomingNoisyReceiver = new AudioBecomingNoisyReceiver(themedReactContext);
+        audioBecomingNoisyReceiver.setListener(this);
+
+    }
+
+    /**
+     * Adding support for remote/headphones controls
+     */
+    private void attachRemoteControls() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            s_mediaSession = new MediaSession(getContext(), "MyMediaSession");
+            s_mediaSession.setCallback(new MediaSession.Callback() {
+                @Override
+                public boolean onMediaButtonEvent(Intent mediaButtonIntent) {
+                    KeyEvent ke = mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT);
+                    if (ke != null && ke.getAction() == KeyEvent.ACTION_DOWN) {
+                        int keyCode = ke.getKeyCode();
+                        mEventEmitter.receiveEvent(getId(), Events.EVENT_REMOTE_PLAY_PAUSE.toString(), null);
+                    }
+                    return super.onMediaButtonEvent(mediaButtonIntent);
+                }
+            });
+            s_mediaSession.setFlags(MediaSession.FLAG_HANDLES_MEDIA_BUTTONS | MediaSession.FLAG_HANDLES_TRANSPORT_CONTROLS);
+            s_mediaSession.setActive(true);
+        }
     }
 
     @Override
@@ -182,10 +223,18 @@ public class ReactVideoView extends ScalableVideoView implements
     }
 
     @Override
+    public void onAudioBecomingNoisy() {
+        mEventEmitter.receiveEvent(getId(), Events.EVENT_AUDIO_BECOMING_NOISY.toString(), null);
+    }
+
+    @Override
     @SuppressLint("DrawAllocation")
     protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
         super.onLayout(changed, left, top, right, bottom);
-
+        List<Rect> exclusions = Collections.singletonList(
+                new Rect(left, top, right, bottom + 100)
+        );
+        ViewCompat.setSystemGestureExclusionRects(this, exclusions);
         if (!changed || !mMediaPlayerValid) {
             return;
         }
@@ -210,7 +259,6 @@ public class ReactVideoView extends ScalableVideoView implements
         if (mMediaPlayer == null) {
             mMediaPlayerValid = false;
             mMediaPlayer = new MediaPlayer();
-            mMediaPlayer.setScreenOnWhilePlaying(true);
             mMediaPlayer.setOnVideoSizeChangedListener(this);
             mMediaPlayer.setOnErrorListener(this);
             mMediaPlayer.setOnPreparedListener(this);
@@ -402,7 +450,7 @@ public class ReactVideoView extends ScalableVideoView implements
             if (!mMediaPlayer.isPlaying()) {
                 start();
                 // Setting the rate unpauses, so we have to wait for an unpause
-                if (mRate != mActiveRate) { 
+                if (mRate != mActiveRate) {
                     setRateModifier(mRate);
                 }
 
@@ -410,7 +458,7 @@ public class ReactVideoView extends ScalableVideoView implements
                 mProgressUpdateHandler.post(mProgressUpdateRunnable);
             }
         }
-        setKeepScreenOn(!mPaused);
+        setKeepScreenOn(!mPaused && mPreventsDisplaySleepDuringVideoPlayback);
     }
 
     // reduces the volume based on stereoPan
@@ -419,6 +467,17 @@ public class ReactVideoView extends ScalableVideoView implements
         // only one decimal allowed
         BigDecimal roundRelativeVolume = new BigDecimal(relativeVolume).setScale(1, BigDecimal.ROUND_HALF_UP);
         return roundRelativeVolume.floatValue();
+    }
+
+    public void setPreventsDisplaySleepDuringVideoPlaybackModifier(final boolean preventsDisplaySleepDuringVideoPlayback) {
+        mPreventsDisplaySleepDuringVideoPlayback = preventsDisplaySleepDuringVideoPlayback;
+
+        if (!mMediaPlayerValid) {
+            return;
+        }
+
+        mMediaPlayer.setScreenOnWhilePlaying(mPreventsDisplaySleepDuringVideoPlayback);
+        setKeepScreenOn(mPreventsDisplaySleepDuringVideoPlayback);
     }
 
     public void setMutedModifier(final boolean muted) {
@@ -517,6 +576,7 @@ public class ReactVideoView extends ScalableVideoView implements
         setRepeatModifier(mRepeat);
         setPausedModifier(mPaused);
         setMutedModifier(mMuted);
+        setPreventsDisplaySleepDuringVideoPlaybackModifier(mPreventsDisplaySleepDuringVideoPlayback);
         setProgressUpdateInterval(mProgressUpdateInterval);
         setRateModifier(mRate);
     }
@@ -665,7 +725,7 @@ public class ReactVideoView extends ScalableVideoView implements
             setKeepScreenOn(false);
         }
     }
-        
+
     // This is not fully tested and does not work for all forms of timed metadata
     @TargetApi(23) // 6.0
     public class TimedMetaDataAvailableListener
@@ -712,7 +772,7 @@ public class ReactVideoView extends ScalableVideoView implements
         else {
             setSrc(mSrcUriString, mSrcType, mSrcIsNetwork, mSrcIsAsset, mRequestHeaders);
         }
-        setKeepScreenOn(true);
+        setKeepScreenOn(mPreventsDisplaySleepDuringVideoPlayback);
     }
 
     @Override
@@ -765,7 +825,7 @@ public class ReactVideoView extends ScalableVideoView implements
 
         return result;
     }
-        
+
     // Select track (so we can use it to listen to timed meta data updates)
     private void selectTimedMetadataTrack(MediaPlayer mp) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
