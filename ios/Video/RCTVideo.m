@@ -950,12 +950,6 @@ static int const RCTVideoUnset = -1;
   [self applyModifiers];
 }
 
-- (void)setMixWithOthers:(NSString *)mixWithOthers
-{
-  _mixWithOthers = mixWithOthers;
-  [self applyModifiers];
-}
-
 - (void)setPaused:(BOOL)paused
 {
   if (paused) {
