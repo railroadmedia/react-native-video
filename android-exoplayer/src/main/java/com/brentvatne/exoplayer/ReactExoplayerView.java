@@ -765,6 +765,10 @@ class ReactExoplayerView extends FrameLayout implements
         eventEmitter.audioBecomingNoisy();
     }
 
+    public void onRemotePlayPause() {
+       eventEmitter.onRemotePlayPause();
+    }
+
     // Player.EventListener implementation
 
     @Override
