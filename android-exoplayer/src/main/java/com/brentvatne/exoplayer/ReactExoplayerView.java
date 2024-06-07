@@ -324,7 +324,7 @@ class ReactExoplayerView extends FrameLayout implements
         // Setting the player for the playerControlView
         playerControlView.setPlayer(player);
         playerControlView.show();
-        playPauseControlContainer = playerControlView.findViewById(R.id.exo_play_pause_container);
+        // playPauseControlContainer = playerControlView.findViewById(R.id.exo_play_pause_container);
 
         // Invoking onClick event for exoplayerView
         exoPlayerView.setOnClickListener(new OnClickListener() {
@@ -335,7 +335,7 @@ class ReactExoplayerView extends FrameLayout implements
         });
 
         //Handling the playButton click event
-        ImageButton playButton = playerControlView.findViewById(R.id.exo_play);
+        ImageButton playButton = playerControlView.findViewById(com.google.android.exoplayer2.R.id.exo_play);
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -347,7 +347,7 @@ class ReactExoplayerView extends FrameLayout implements
         });
 
         //Handling the pauseButton click event
-        ImageButton pauseButton = playerControlView.findViewById(R.id.exo_pause);
+        ImageButton pauseButton = playerControlView.findViewById(com.google.android.exoplayer2.R.id.exo_pause);
         pauseButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
