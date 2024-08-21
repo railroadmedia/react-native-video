@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.AudioManager;
+import android.os.Build;
 
 public class AudioBecomingNoisyReceiver extends BroadcastReceiver {
 
@@ -25,7 +26,7 @@ public class AudioBecomingNoisyReceiver extends BroadcastReceiver {
     public void setListener(BecomingNoisyListener listener) {
         this.listener = listener;
         IntentFilter intentFilter = new IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY);
-        context.registerReceiver(this, intentFilter);
+        compatRegisterReceiver(this.context, this, intentFilter, false);
     }
 
     public void removeListener() {
@@ -34,6 +35,14 @@ public class AudioBecomingNoisyReceiver extends BroadcastReceiver {
             context.unregisterReceiver(this);
         } catch (Exception ignore) {
             // ignore if already unregistered
+        }
+    }
+
+    private void compatRegisterReceiver(Context context, BroadcastReceiver receiver, IntentFilter filter, boolean exported) {
+        if (Build.VERSION.SDK_INT >= 34 && context.getApplicationInfo().targetSdkVersion >= 34) {
+            context.registerReceiver(receiver, filter, exported ? Context.RECEIVER_EXPORTED : Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            context.registerReceiver(receiver, filter);
         }
     }
 }
