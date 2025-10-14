@@ -527,9 +527,18 @@ static int const RCTVideoUnset = -1;
     return;
   }
   
-  NSURL *url = isNetwork || isAsset
-    ? [NSURL URLWithString:uri]
-    : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
+  // Log the values to help debug the crash
+  DebugLog(@"RCTVideo: uri='%@', type='%@', isNetwork=%d, isAsset=%d", uri, type, isNetwork, isAsset);
+  
+  NSURL *url;
+  @try {
+    url = isNetwork || isAsset
+      ? [NSURL URLWithString:uri]
+      : [[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]];
+  } @catch (NSException *exception) {
+    DebugLog(@"RCTVideo: NSURL creation failed - %@", exception.reason);
+    return;
+  }
   NSMutableDictionary *assetOptions = [[NSMutableDictionary alloc] init];
   
   if (isNetwork) {
@@ -556,7 +565,12 @@ static int const RCTVideoUnset = -1;
   } else if (isAsset) {
     asset = [AVURLAsset URLAssetWithURL:url options:nil];
   } else {
-    asset = [AVURLAsset URLAssetWithURL:[[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]] options:nil];
+    @try {
+      asset = [AVURLAsset URLAssetWithURL:[[NSURL alloc] initFileURLWithPath:[[NSBundle mainBundle] pathForResource:uri ofType:type]] options:nil];
+    } @catch (NSException *exception) {
+      DebugLog(@"RCTVideo: AVURLAsset creation failed - %@", exception.reason);
+      return;
+    }
   }
   // Reset _loadingRequest
   if (_loadingRequest != nil) {
